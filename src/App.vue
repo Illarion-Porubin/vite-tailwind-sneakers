@@ -1,13 +1,22 @@
 <script setup>
-import { onMounted, provide, reactive, ref, watch } from 'vue'
+import { computed, onMounted, provide, reactive, ref, watch } from 'vue'
 import CardList from './components/CardList.vue'
 import HeaderComp from './components/HeaderComp.vue'
 import axios from 'axios'
 import DriwerComp from './components/DrawerComp.vue'
 
 const items = ref([])
+const cart = ref([])
+const isCreatingOrder = ref(false)
 
-const drawerOpen = ref(false);
+const drawerOpen = ref(false)
+
+const totalPrice = computed(() => cart.value.reduce((acc, item) => acc + item.price, 0))
+const vatPrice = computed(() => Math.round((totalPrice.value * 5) / 100))
+
+const cartIsEmpty = computed(() => cart.value.length === 0)
+
+const cartButtonDisabled = computed(() => isCreatingOrder.value || cartIsEmpty.value);
 
 // если используешь ref то обращася к value (sortBy.value)
 // ref под капотом применяет реактивность и обычно используется для работы с массивами
@@ -18,6 +27,41 @@ const filters = reactive({
   searchQuert: ''
 })
 
+const removeFromCart = (item) => {
+  cart.value.splice(cart.value.indexOf(item), 1)
+  item.isAdded = false
+}
+
+const addToCart = (item) => {
+  cart.value.push(item)
+  item.isAdded = true
+}
+
+const onClickAddPlus = (item) => {
+  if (!item.isAdded) {
+    addToCart(item)
+  } else {
+    removeFromCart(item)
+  }
+}
+
+const createOrder = async () => {
+  try {
+    isCreatingOrder.value = true
+    const { data } = await axios.post(`https://c17d199de379e6bf.mokky.dev/orders`, {
+      items: cart.value,
+      tootalPrice: totalPrice.value
+    })
+    cart.value = []
+
+    return data
+  } catch (error) {
+    console.log(error);
+  } finally {
+    isCreatingOrder.value = false
+  }
+}
+
 const onChangeSelect = (event) => {
   // будет следить за select
   filters.sortBy = event.target.value // по select обращаемся к event.target.value и передаем его в watch
@@ -25,17 +69,17 @@ const onChangeSelect = (event) => {
 
 const onChangeSearchInput = (event) => {
   // будет следить за input
-  filters.searchQuert = event.target.value 
+  filters.searchQuert = event.target.value
 }
 
 const fetchFavorites = async () => {
   try {
     const { data: favorites } = await axios.get(`https://c17d199de379e6bf.mokky.dev/favorites`)
-    
-    items.value = items.value.map(item => {
-      const favorite = favorites.find(favorite => favorite.parentId === item.id);
 
-      if(!favorite){
+    items.value = items.value.map((item) => {
+      const favorite = favorites.find((favorite) => favorite.parentId === item.id)
+
+      if (!favorite) {
         return item
       }
 
@@ -44,7 +88,7 @@ const fetchFavorites = async () => {
         isFavorite: true,
         favoriteId: favorite.id
       }
-    });
+    })
   } catch (e) {
     console.log(e)
   }
@@ -52,21 +96,20 @@ const fetchFavorites = async () => {
 
 const addToFavorite = async (item) => {
   try {
-    if(!item.isFavorite) {
+    if (!item.isFavorite) {
       const obj = {
         parentId: item.id
       }
-      item.isFavorite = true;
-      const { data } = await axios.post(`https://c17d199de379e6bf.mokky.dev/favorites`, obj);
-      item.favoriteId = data.id;
-      console.log(data);
+      item.isFavorite = true
+      const { data } = await axios.post(`https://c17d199de379e6bf.mokky.dev/favorites`, obj)
+      item.favoriteId = data.id
     } else {
       item.isFavorite = false
-      await axios.delete(`https://c17d199de379e6bf.mokky.dev/favorites/${item.favoriteId}`);
+      await axios.delete(`https://c17d199de379e6bf.mokky.dev/favorites/${item.favoriteId}`)
       item.favoriteId = null
     }
   } catch (error) {
-    console.log(error);
+    console.log(error)
   }
 }
 
@@ -95,9 +138,10 @@ const fetchItems = async () => {
   }
 }
 onMounted(async () => {
-   await fetchItems();
-   await fetchFavorites();
+  await fetchItems()
+  await fetchFavorites()
 })
+
 
 // onMounted(fetchItems)
 watch(filters, fetchItems) // отслежвай filters и вызови fetchItems при изменении
@@ -116,27 +160,44 @@ watch(filters, fetchItems) // отслежвай filters и вызови fetchIt
 
 /// v-if="drawerOpen" будет отображать компонент если true
 
+watch(cart, () => {
+  items.value = items.value.map(() => ({
+    ...items,
+    isAdded: false
+  }))
+}) 
+
 const openDrawer = () => {
   drawerOpen.value = true
 }
 
 const closeDrawer = () => {
+  console.log('object');
   drawerOpen.value = false
 }
 
 provide('addToFavorite', addToFavorite)
-provide('cartActions', {
+provide('addToCart', addToCart)
+provide('cart', {
+  cart,
   closeDrawer,
-  openDrawer
+  openDrawer,
+  addToCart,
+  removeFromCart
 })
-
-
 </script>
 
 <template>
-  <DriwerComp v-if="drawerOpen" @close-drawer="closeDrawer"/> 
+  <DriwerComp
+    v-if="drawerOpen"
+    :total-price="totalPrice"
+    :vatPrice="vatPrice"
+    @close-drawer="closeDrawer"
+    @create-order="createOrder"
+    :button-disabled="cartButtonDisabled"
+  />
   <div class="bg-white w-4/5 m-auto rounded-xl mt-14">
-    <HeaderComp @open-drawer="openDrawer"/>
+    <HeaderComp :total-price="totalPrice" @open-drawer="openDrawer" />
 
     <div class="p-10">
       <div class="flex justify-between items-center">
@@ -162,7 +223,7 @@ provide('cartActions', {
       </div>
 
       <div class="">
-        <CardList :items="items" />
+        <CardList :items="items" @add-to-cart="onClickAddPlus" />
       </div>
     </div>
   </div>

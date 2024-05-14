@@ -8,7 +8,7 @@ defineProps({
   isFavorite: Boolean,
   isAdded: Boolean,
   onClickFavorite: Function,
-  onClickadd: Function
+  onClickAdd: Function
 })
 
 </script>
@@ -32,7 +32,7 @@ defineProps({
         <span class="text-slade-400">Цена</span>
         <b>{{ price }} руб.</b>
       </div>
-      <img @click="onClickAdd" :src="!isAdded ? `/plus.svg` : `/checked.svg`" alt="Plus" />
+      <img @click="onClickAdd" :src="isAdded ? `/checked.svg` : `/plus.svg`" alt="Plus" />
     </div>
   </div>
 </template>

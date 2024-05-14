@@ -16,7 +16,7 @@ defineProps({
 // :on-click-favorite="() => $emit('addToFavorite', item)" //в CardComp
 
 
-const addToFavorite = inject('addToFavorite')/// при пропс дрилинги юзай inject (аналог контекста в react), здесь показана возможность как это сделать
+const addToFavorite = inject('addToFavorite', 'addToCart')/// при пропс дрилинги юзай inject (аналог контекста в react), здесь показана возможность как это сделать
 
 </script>
 
@@ -29,9 +29,10 @@ const addToFavorite = inject('addToFavorite')/// при пропс дрилин�
       :price="item.price"
       :image-url="item.imageUrl"
       :title="item.title"
-      :isAdded="true"
       :on-click-favorite="() => addToFavorite(item)"
+      :on-click-add="() => $emit('addToCart', item)"
       :isFavorite="item.isFavorite"
+      :is-added="item.isAdded"
     />
   </div>
 </template>
