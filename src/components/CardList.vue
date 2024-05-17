@@ -3,7 +3,8 @@ import { inject } from 'vue';
 import CardComp from './CardComp.vue'
 
 defineProps({
-  items: Array
+  items: Array,
+  isFavorites: Boolean
 })
 
 
@@ -29,8 +30,8 @@ const addToFavorite = inject('addToFavorite', 'addToCart')/// при пропс 
       :price="item.price"
       :image-url="item.imageUrl"
       :title="item.title"
-      :on-click-favorite="() => addToFavorite(item)"
-      :on-click-add="() => $emit('addToCart', item)"
+      :on-click-favorite="isFavorites ? null : () => addToFavorite(item)"
+      :on-click-add="isFavorites ? null : () => $emit('addToCart', item)"
       :isFavorite="item.isFavorite"
       :is-added="item.isAdded"
     />

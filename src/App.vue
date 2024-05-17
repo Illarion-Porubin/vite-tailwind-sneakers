@@ -6,16 +6,14 @@ import DriwerComp from './components/DrawerComp.vue'
 
 /* Корзина */
 const cart = ref([])
-const isCreatingOrder = ref(false)
+
 
 const drawerOpen = ref(false)
 
 const totalPrice = computed(() => cart.value.reduce((acc, item) => acc + item.price, 0))
 const vatPrice = computed(() => Math.round((totalPrice.value * 5) / 100))
 
-const cartIsEmpty = computed(() => cart.value.length === 0)
 
-const cartButtonDisabled = computed(() => isCreatingOrder.value || cartIsEmpty.value)
 
 // если используешь ref то обращася к value (sortBy.value)
 // ref под капотом применяет реактивность и обычно используется для работы с массивами
@@ -31,22 +29,7 @@ const addToCart = (item) => {
   item.isAdded = true
 }
 
-const createOrder = async () => {
-  try {
-    isCreatingOrder.value = true
-    const { data } = await axios.post(`https://c17d199de379e6bf.mokky.dev/orders`, {
-      items: cart.value,
-      tootalPrice: totalPrice.value
-    })
-    cart.value = []
 
-    return data
-  } catch (error) {
-    console.log(error)
-  } finally {
-    isCreatingOrder.value = false
-  }
-}
 
 watch(
   cart,
@@ -60,7 +43,7 @@ const addToFavorite = async (item) => {
   try {
     if (!item.isFavorite) {
       const obj = {
-        parentId: item.id
+        item_id: item.id
       }
       item.isFavorite = true
       const { data } = await axios.post(`https://c17d199de379e6bf.mokky.dev/favorites`, obj)
@@ -108,6 +91,9 @@ provide('cart', {
   addToCart,
   removeFromCart
 })
+
+//можно передаввать в пропсы
+// @close-drawer="closeDrawer"
 </script>
 
 <template>
@@ -115,9 +101,6 @@ provide('cart', {
     v-if="drawerOpen"
     :total-price="totalPrice"
     :vatPrice="vatPrice"
-    @close-drawer="closeDrawer"
-    @create-order="createOrder"
-    :button-disabled="cartButtonDisabled"
   />
   <div class="bg-white w-4/5 m-auto rounded-xl mt-14">
     <HeaderComp :total-price="totalPrice" @open-drawer="openDrawer" />

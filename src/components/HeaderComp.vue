@@ -36,7 +36,7 @@ defineProps({
       </RouterLink>
 
       <li class="flex items-center gap-3 text-slate-500 cursor-pointer hover:text-black">
-        <img src="/heart.svg" alt="Cart" />
+        <img src="/profile.svg" alt="Cart" />
         <span>Профиль</span>
       </li>
     </ul>

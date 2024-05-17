@@ -2,6 +2,7 @@
 import CardList from '../components/CardList.vue'
 import { inject, reactive, watch, ref, onMounted } from 'vue'
 import axios from 'axios'
+import debounce from 'lodash.debounce';
 
 const {cart, addToCart, removeFromCart} = inject('cart');
 
@@ -25,17 +26,17 @@ const onChangeSelect = (event) => {
   filters.sortBy = event.target.value // по select обращаемся к event.target.value и передаем его в watch
 }
 
-const onChangeSearchInput = (event) => {
+const onChangeSearchInput = debounce((event) => {
   // будет следить за input
   filters.searchQuert = event.target.value
-}
+}, 400)
 
 const fetchFavorites = async () => {
   try {
     const { data: favorites } = await axios.get(`https://c17d199de379e6bf.mokky.dev/favorites`)
 
     items.value = items.value.map((item) => {
-      const favorite = favorites.find((favorite) => favorite.parentId === item.id)
+      const favorite = favorites.find((favorite) => favorite.item_id === item.id)
 
       if (!favorite) {
         return item
@@ -76,7 +77,7 @@ const fetchItems = async () => {
     console.log(e)
   }
 }
-
+// onMounted(fetchItems)
 onMounted(async () => {
   const localCart = localStorage.getItem('cart')
   cart.value = localCart ? JSON.parse(localCart) : []
@@ -90,16 +91,19 @@ onMounted(async () => {
   }))
 })
 
-// onMounted(fetchItems)
+
+watch(filters, fetchItems) // отслежвай filters и вызови fetchItems при изменении
+
+
 
 watch(cart, () => {
-  items.value = items.value.map(() => ({
-    ...items,
+  items.value = items.value.map((item) => ({
+    ...item,
     isAdded: false
   }))
 })
 
-watch(filters, fetchItems) // отслежвай filters и вызови fetchItems при изменении
+
 
 </script>
 
